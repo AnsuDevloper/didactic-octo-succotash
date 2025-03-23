@@ -93,95 +93,137 @@
     </footer>
 
     <script>
-        const platformSelect = document.getElementById('platform');
-        const microcontrollerSelect = document.getElementById('microcontroller');
-        const moduleSelect = document.getElementById('module');
-        const searchInput = document.getElementById('search');
-        const loadProjectsButton = document.getElementById('load-projects');
-        const projectsList = document.getElementById('projects');
+    const platformSelect = document.getElementById('platform');
+    const microcontrollerSelect = document.getElementById('microcontroller');
+    const moduleSelect = document.getElementById('module');
+    const searchInput = document.getElementById('search');
+    const loadProjectsButton = document.getElementById('load-projects');
+    const projectsList = document.getElementById('projects');
 
-        let modulesData = {};
+    let modulesData = {};
 
-        // Fetch modules data from the text file
-        fetch('modules.txt')
-            .then(response => response.text())
-            .then(data => {
-                modulesData = parseModulesData(data);
-            })
-            .catch(error => console.error('Error loading modules data:', error));
+    // Fetch modules from modules.txt
+    fetch('modules.txt')
+        .then(response => response.text())
+        .then(data => {
+            modulesData = parseModulesData(data);
+            populatePlatformDropdown();
+        })
+        .catch(error => console.error('Error loading modules:', error));
 
-        // Parse the modules data from the text file
-        function parseModulesData(data) {
-            const lines = data.split('\n');
-            const parsedData = {};
-            let currentPlatform = '';
-            let currentMicrocontroller = '';
+    function parseModulesData(data) {
+        const lines = data.split('\n');
+        const parsedData = {};
+        let currentPlatform = '';
+        let currentMicrocontroller = '';
 
-            lines.forEach(line => {
-                line = line.trim();
-                if (line.endsWith(':')) {
-                    const header = line.slice(0, -1).toLowerCase();
-                    if (['espressif', 'arduino', 'raspberry-pi'].includes(header)) {
-                        currentPlatform = header;
-                        parsedData[currentPlatform] = {};
-                    } else {
-                        currentMicrocontroller = header;
-                        if (currentPlatform) {
-                            parsedData[currentPlatform][currentMicrocontroller] = [];
-                        }
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.endsWith(':')) {
+                const header = line.slice(0, -1).toLowerCase();
+                if (['espressif', 'arduino', 'raspberry-pi'].includes(header)) {
+                    currentPlatform = header;
+                    parsedData[currentPlatform] = {};
+                } else {
+                    currentMicrocontroller = header;
+                    if (currentPlatform) {
+                        parsedData[currentPlatform][currentMicrocontroller] = [];
                     }
-                } else if (line && currentPlatform && currentMicrocontroller) {
-                    parsedData[currentPlatform][currentMicrocontroller].push(line);
                 }
+            } else if (line && currentPlatform && currentMicrocontroller) {
+                parsedData[currentPlatform][currentMicrocontroller].push(line);
+            }
+        });
+
+        return parsedData;
+    }
+
+    function populatePlatformDropdown() {
+        platformSelect.innerHTML = `
+            <option value="">-- Choose Platform --</option>
+            <option value="espressif">Espressif Systems</option>
+            <option value="arduino">Arduino</option>
+            <option value="raspberry-pi">Raspberry Pi</option>
+        `;
+        platformSelect.disabled = false;
+    }
+
+    platformSelect.addEventListener('change', () => {
+        const platform = platformSelect.value;
+        microcontrollerSelect.innerHTML = '<option value="">-- Choose Microcontroller --</option>';
+        moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+        moduleSelect.disabled = true;
+        loadProjectsButton.disabled = true;
+        projectsList.innerHTML = '';
+
+        if (platform && modulesData[platform]) {
+            microcontrollerSelect.disabled = false;
+            Object.keys(modulesData[platform]).forEach(mc => {
+                const option = document.createElement('option');
+                option.value = mc;
+                option.textContent = mc.replace(/-/g, ' ').toUpperCase();
+                microcontrollerSelect.appendChild(option);
+            });
+        } else {
+            microcontrollerSelect.disabled = true;
+        }
+    });
+
+    microcontrollerSelect.addEventListener('change', () => {
+        const platform = platformSelect.value;
+        const microcontroller = microcontrollerSelect.value;
+        moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+        loadProjectsButton.disabled = true;
+        projectsList.innerHTML = '';
+
+        if (platform && microcontroller && modulesData[platform][microcontroller]) {
+            moduleSelect.disabled = false;
+            modulesData[platform][microcontroller].forEach(mod => {
+                const option = document.createElement('option');
+                option.value = mod;
+                option.textContent = mod;
+                moduleSelect.appendChild(option);
+            });
+        } else {
+            moduleSelect.disabled = true;
+        }
+    });
+
+    moduleSelect.addEventListener('change', () => {
+        loadProjectsButton.disabled = !moduleSelect.value;
+    });
+
+    loadProjectsButton.addEventListener('click', () => {
+        const selectedModule = moduleSelect.value;
+        projectsList.innerHTML = '';
+        if (selectedModule) {
+            const li = document.createElement('li');
+            li.textContent = `Project ideas for: ${selectedModule}`;
+            projectsList.appendChild(li);
+        }
+    });
+
+    // Search modules
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase();
+        const platform = platformSelect.value;
+        const microcontroller = microcontrollerSelect.value;
+
+        moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+
+        if (platform && microcontroller && modulesData[platform][microcontroller]) {
+            const filteredModules = modulesData[platform][microcontroller].filter(mod =>
+                mod.toLowerCase().includes(query)
+            );
+
+            filteredModules.forEach(mod => {
+                const option = document.createElement('option');
+                option.value = mod;
+                option.textContent = mod;
+                moduleSelect.appendChild(option);
             });
 
-            return parsedData;
+            moduleSelect.disabled = filteredModules.length === 0;
         }
-
-        // Populate microcontrollers based on selected platform
-        platformSelect.addEventListener('change', () => {
-            const platform = platformSelect.value;
-            microcontrollerSelect.innerHTML = '<option value="">-- Choose Microcontroller --</option>';
-            moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
-            moduleSelect.disabled = true;
-            loadProjectsButton.disabled = true;
-            projectsList.innerHTML = '';
-
-            if (platform && modulesData[platform]) {
-                microcontrollerSelect.disabled = false;
-                Object.keys(modulesData[platform]).forEach(mc => {
-                    const option = document.createElement('option');
-                    option.value = mc;
-                    option.textContent = mc.replace(/-/g, ' ').toUpperCase();
-                    microcontrollerSelect.appendChild(option);
-                });
-            } else {
-                microcontrollerSelect.disabled = true;
-            }
-        });
-
-        // Populate modules based on selected microcontroller
-        microcontrollerSelect.addEventListener('change', () => {
-            const platform = platformSelect.value;
-            const microcontroller = microcontrollerSelect.value;
-            moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
-            loadProjectsButton.disabled = true;
-            projectsList.innerHTML = '';
-
-            if (platform && microcontroller && modulesData[platform][microcontroller]) {
-                moduleSelect.disabled = false;
-                modulesData[platform][microcontroller].forEach(mod => {
-                    const option = document.createElement('option');
-                    option.value = mod;
-                    option.textContent = mod;
-                    moduleSelect.appendChild(option);
-                });
-            } else {
-                moduleSelect.disabled = true;
-            }
-        });
-
-        // Enable load projects button when a module is selected
-        moduleSelect.addEventListener('change',
-::contentReference[oaicite:12]{index=12}
- 
+    });
+</script>
