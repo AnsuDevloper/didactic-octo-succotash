@@ -1,39 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Trash to Treasure - DIY Electronics Hub</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trash to Treasure - DIY Electronics Hub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        select, button, input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Welcome to Trash to Treasure</h1>
-    <p>New DIY electronics projects every week! Select your microcontroller to begin.</p>
-  </header>
+    <header>
+        <h1>Trash to Treasure</h1>
+        <p>Turn your spare components into exciting projects!</p>
+    </header>
+    <main>
+        <div class="container">
+            <h2>Select Your Platform</h2>
+            <select id="platform">
+                <option value="">-- Choose Platform --</option>
+                <option value="espressif">Espressif Systems</option>
+                <option value="arduino">Arduino</option>
+                <option value="raspberry-pi">Raspberry Pi</option>
+            </select>
 
-  <main>
-    <section id="project-selection">
-      <h2>Select Your Microcontroller</h2>
-      <select id="microcontroller">
-        <option value="esp32">ESP32</option>
-        <option value="arduino">Arduino</option>
-        <option value="raspberry-pi">Raspberry Pi</option>
-      </select>
-      <button id="load-projects">Load Projects</button>
-    </section>
+            <h2>Select Microcontroller</h2>
+            <select id="microcontroller" disabled>
+                <option value="">-- Choose Microcontroller --</option>
+            </select>
 
-    <section id="project-list">
-      <h2>Available Projects</h2>
-      <ul id="projects"></ul>
-    </section>
-  </main>
+            <h2>Select Module</h2>
+            <select id="module" disabled>
+                <option value="">-- Choose Module --</option>
+            </select>
 
-  <footer>
-    <p>&copy; 2025 Trash to Treasure. All rights reserved.</p>
-  </footer>
+            <h2>Search Modules</h2>
+            <input type="text" id="search" placeholder="Search for modules...">
 
-  <script src="script.js"></script>
-</body>
-</html>
+            <button id="load-projects" disabled>Load Projects</button>
 
+            <h2>Available Projects</h2>
+            <ul id="projects"></ul>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Trash to Treasure. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const platformSelect = document.getElementById('platform');
+        const microcontrollerSelect = document.getElementById('microcontroller');
+        const moduleSelect = document.getElementById('module');
+        const searchInput = document.getElementById('search');
+        const loadProjectsButton = document.getElementById('load-projects');
+        const projectsList = document.getElementById('projects');
+
+        let modulesData = {};
+
+        // Fetch modules data from the text file
+        fetch('modules.txt')
+            .then(response => response.text())
+            .then(data => {
+                modulesData = parseModulesData(data);
+            })
+            .catch(error => console.error('Error loading modules data:', error));
+
+        // Parse the modules data from the text file
+        function parseModulesData(data) {
+            const lines = data.split('\n');
+            const parsedData = {};
+            let currentPlatform = '';
+            let currentMicrocontroller = '';
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.endsWith(':')) {
+                    const header = line.slice(0, -1).toLowerCase();
+                    if (['espressif', 'arduino', 'raspberry-pi'].includes(header)) {
+                        currentPlatform = header;
+                        parsedData[currentPlatform] = {};
+                    } else {
+                        currentMicrocontroller = header;
+                        if (currentPlatform) {
+                            parsedData[currentPlatform][currentMicrocontroller] = [];
+                        }
+                    }
+                } else if (line && currentPlatform && currentMicrocontroller) {
+                    parsedData[currentPlatform][currentMicrocontroller].push(line);
+                }
+            });
+
+            return parsedData;
+        }
+
+        // Populate microcontrollers based on selected platform
+        platformSelect.addEventListener('change', () => {
+            const platform = platformSelect.value;
+            microcontrollerSelect.innerHTML = '<option value="">-- Choose Microcontroller --</option>';
+            moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+            moduleSelect.disabled = true;
+            loadProjectsButton.disabled = true;
+            projectsList.innerHTML = '';
+
+            if (platform && modulesData[platform]) {
+                microcontrollerSelect.disabled = false;
+                Object.keys(modulesData[platform]).forEach(mc => {
+                    const option = document.createElement('option');
+                    option.value = mc;
+                    option.textContent = mc.replace(/-/g, ' ').toUpperCase();
+                    microcontrollerSelect.appendChild(option);
+                });
+            } else {
+                microcontrollerSelect.disabled = true;
+            }
+        });
+
+        // Populate modules based on selected microcontroller
+        microcontrollerSelect.addEventListener('change', () => {
+            const platform = platformSelect.value;
+            const microcontroller = microcontrollerSelect.value;
+            moduleSelect.innerHTML = '<option value="">-- Choose Module --</option>';
+            loadProjectsButton.disabled = true;
+            projectsList.innerHTML = '';
+
+            if (platform && microcontroller && modulesData[platform][microcontroller]) {
+                moduleSelect.disabled = false;
+                modulesData[platform][microcontroller].forEach(mod => {
+                    const option = document.createElement('option');
+                    option.value = mod;
+                    option.textContent = mod;
+                    moduleSelect.appendChild(option);
+                });
+            } else {
+                moduleSelect.disabled = true;
+            }
+        });
+
+        // Enable load projects button when a module is selected
+        moduleSelect.addEventListener('change',
+::contentReference[oaicite:12]{index=12}
+ 
