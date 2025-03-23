@@ -1,1 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trash to Treasure - DIY Electronics Hub</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Welcome to Trash to Treasure</h1>
+    <p>New DIY electronics projects every week! Select your microcontroller to begin.</p>
+  </header>
+
+  <main>
+    <section id="project-selection">
+      <h2>Select Your Microcontroller</h2>
+      <select id="microcontroller">
+        <option value="esp32">ESP32</option>
+        <option value="arduino">Arduino</option>
+        <option value="raspberry-pi">Raspberry Pi</option>
+      </select>
+      <button id="load-projects">Load Projects</button>
+    </section>
+
+    <section id="project-list">
+      <h2>Available Projects</h2>
+      <ul id="projects"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Trash to Treasure. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
 
